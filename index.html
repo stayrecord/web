@@ -306,11 +306,9 @@
         return;
       }
 
-      // Format tanggal ke YYYY-MM-DD untuk query database
       const checkInStr = startDate.toISOString().split('T')[0];
       const checkOutStr = endDate.toISOString().split('T')[0];
 
-      // Ambil seluruh unit aktif
       const { data: units, error: unitError } = await supabaseClient
         .from('units')
         .select('*')
@@ -321,7 +319,6 @@
         return;
       }
 
-      // Ambil reservasi yang bentrok pada rentang tanggal tersebut
       const { data: bookings, error: bookingError } = await supabaseClient
         .from('reservations')
         .select('unit_id')
@@ -333,15 +330,12 @@
         return;
       }
 
-      // Filter unit yang ID-nya tidak ada di daftar booking yang bentrok
       const bookedUnitIds = new Set(bookings.map(b => b.unit_id));
       const readyUnits = units.filter(u => !bookedUnitIds.has(u.id));
 
-      // Tampilkan hasil ke UI
       renderReadyUnits(readyUnits);
     });
 
-    // Render Daftar Unit Ready dengan Carousel Gambar
     function renderReadyUnits(units) {
       const container = document.getElementById('unit-list-container');
       const resultInfo = document.getElementById('result-info');
@@ -357,7 +351,6 @@
       }
 
       units.forEach((unit, index) => {
-        // Ambil array gambar yang terisi
         const images = [unit.image_1, unit.image_2, unit.image_3, unit.image_4, unit.image_5].filter(img => img);
         const defaultImg = images.length > 0 ? images[0] : 'https://via.placeholder.com/400x250?text=No+Image';
 
@@ -394,7 +387,6 @@
       });
     }
 
-    // Fungsi Navigasi Carousel Gambar
     window.changeSlide = function(unitIndex, direction) {
       const carousel = document.getElementById(`carousel-${unitIndex}`);
       const images = carousel.querySelectorAll('img');
