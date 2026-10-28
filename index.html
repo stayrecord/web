@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     <!-- Font Awesome untuk Ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -395,24 +397,24 @@
             <button class="toggle-btn">Bulanan</button>
         </div>
 
-        <!-- Kolom Cek-In (Klik untuk buka pop-up kalender) -->
+        <!-- Kolom Cek-In -->
         <div class="date-box" id="open-calendar-in">
             <span class="date-label">CEK-IN</span>
-            <div id="checkin-display" class="date-value">28 Oktober 2026</div>
+            <div id="checkin-display" class="date-value">Pilih tanggal...</div>
         </div>
 
-        <!-- Kolom Cek-Out (Klik untuk buka pop-up kalender) -->
+        <!-- Kolom Cek-Out -->
         <div class="date-box" id="open-calendar-out">
             <span class="date-label">CEK-OUT</span>
-            <div id="checkout-display" class="date-value">31 Oktober 2026</div>
+            <div id="checkout-display" class="date-value">Pilih tanggal...</div>
         </div>
 
         <div style="margin-top: 16px; margin-bottom: 20px;" id="duration-display" class="duration-info">
-            3 malam · Sewa harian
+            Silakan pilih tanggal check-in & check-out
         </div>
 
-        <button class="btn-check">Cek ketersediaan</button>
-        <button class="btn-whatsapp">Chat via WhatsApp</button>
+        <button class="btn-check" id="btn-cek-ketersediaan">Cek ketersediaan</button>
+        <button class="btn-whatsapp" onclick="window.open('https://wa.me/628123456789', '_blank')">Chat via WhatsApp</button>
     </div>
 
     <!-- Modal Pop-up Kalender -->
@@ -433,32 +435,32 @@
                 <div class="calendar-day-name">Sab</div>
             </div>
             <div class="calendar-footer">
-                <div class="calendar-footer-info" id="popup-duration-info">3 malam</div>
+                <div class="calendar-footer-info" id="popup-duration-info">Pilih tanggal</div>
                 <button class="btn-select-calendar" id="btn-apply-date">Pilih</button>
             </div>
         </div>
     </div>
 
+    <!-- Section Hasil Unit di Bawah -->
     <div class="section-unit">
         <h3>Pilih unit untuk menginap</h3>
         <div class="unit-placeholder">
-            Konfigurasi belum lengkap.
+            Silakan pilih tanggal dan klik "Cek ketersediaan" untuk melihat kamar yang ready.
         </div>
     </div>
 
     <script>
-        // 1. Buat objek tanggal untuk hari ini
+        // Konfigurasi Supabase
+        const SUPABASE_URL = 'https://aurhbcphystjtkcmevni.supabase.co';
+        const SUPABASE_ANON_KEY = 'MASUKKAN_ANON_KEY_ANDA_DISINI'; 
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const today = new Date();
         today.setHours(0, 0, 0, 0); 
 
-        // 2. Buat objek tanggal untuk besok (tambah 1 hari)
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-
-        // 3. Set sebagai nilai awal (default)
-        let startDate = today;
-        let endDate = tomorrow;
-        let selectingStart = false;
+        let startDate = null;
+        let endDate = null;
+        let selectingStart = true;
 
         let currentMonth = today.getMonth();
         let currentYear = today.getFullYear();
@@ -488,6 +490,10 @@
         });
 
         document.getElementById('btn-apply-date').addEventListener('click', () => {
+            if (!startDate || !endDate) {
+                alert('Pilih tanggal check-in dan check-out terlebih dahulu.');
+                return;
+            }
             overlay.style.display = 'none';
             updateUI();
         });
@@ -567,16 +573,16 @@
         }
 
         function updateUI() {
-            document.getElementById('checkin-display').textContent = formatDate(startDate);
-            
+            if (startDate) {
+                document.getElementById('checkin-display').textContent = formatDate(startDate);
+                document.getElementById('checkin-display').style.color = '#18181b';
+            }
             if (endDate) {
                 document.getElementById('checkout-display').textContent = formatDate(endDate);
+                document.getElementById('checkout-display').style.color = '#18181b';
                 const diffTime = Math.abs(endDate - startDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 document.getElementById('duration-display').textContent = `${diffDays} malam · Sewa harian`;
-            } else {
-                document.getElementById('checkout-display').textContent = "Pilih tanggal...";
-                document.getElementById('duration-display').textContent = `Pilih tanggal check-out (minimal 1 malam)`;
             }
         }
 
@@ -598,7 +604,97 @@
             renderCalendar();
         });
 
-        updateUI();
+        // Tombol Cek Ketersediaan dari Database Supabase
+        document.getElementById('btn-cek-ketersediaan').addEventListener('click', async () => {
+            if (!startDate || !endDate) {
+                alert('Mohon masukkan rentang tanggal Check-in dan Check-out terlebih dahulu.');
+                return;
+            }
+
+            const checkInStr = startDate.toISOString().split('T')[0];
+            const checkOutStr = endDate.toISOString().split('T')[0];
+
+            // 1. Ambil unit aktif dari Supabase
+            const { data: units, error: unitError } = await supabaseClient
+                .from('units')
+                .select('*')
+                .eq('is_active', true);
+
+            if (unitError) {
+                alert('Gagal memuat data unit: ' + unitError.message);
+                return;
+            }
+
+            // 2. Cek reservasi yang bentrok tanggal
+            const { data: bookings, error: bookingError } = await supabaseClient
+                .from('reservations')
+                .select('unit_id')
+                .in('status', ['Orderan Baru', 'Dikonfirmasi', 'Check-in'])
+                .or(`check_in.lt.${checkOutStr},check_out.gt.${checkInStr}`);
+
+            if (bookingError) {
+                alert('Gagal memeriksa ketersediaan: ' + bookingError.message);
+                return;
+            }
+
+            const bookedUnitIds = new Set(bookings.map(b => b.unit_id));
+            const readyUnits = units.filter(u => !bookedUnitIds.has(u.id));
+
+            renderReadyUnits(readyUnits);
+        });
+
+        function renderReadyUnits(units) {
+            const sectionUnit = document.querySelector('.section-unit');
+            
+            if (units.length === 0) {
+                sectionUnit.innerHTML = `
+                    <h3>Pilih unit untuk menginap</h3>
+                    <div class="unit-placeholder" style="color: #ef4444; border-color: #f87171; background: #fef2f2;">
+                        Maaf, tidak ada kamar yang tersedia pada rentang tanggal tersebut.
+                    </div>
+                `;
+                return;
+            }
+
+            let unitsHTML = `<h3>Kamar tersedia : ${units.length}</h3>`;
+            
+            units.forEach((unit, index) => {
+                const images = [unit.image_1, unit.image_2, unit.image_3, unit.image_4, unit.image_5].filter(img => img);
+                const defaultImg = images.length > 0 ? images[0] : 'https://via.placeholder.com/400x250?text=No+Image';
+
+                let imagesHtml = '';
+                images.forEach((img, imgIndex) => {
+                    imagesHtml += `<img src="${img}" class="${imgIndex === 0 ? 'active' : ''}" style="width: 100%; height: 200px; object-fit: cover; display: ${imgIndex === 0 ? 'block' : 'none'};" alt="Unit">`;
+                });
+                if (images.length === 0) {
+                    imagesHtml = `<img src="${defaultImg}" style="width: 100%; height: 200px; object-fit: cover; display: block;" alt="Unit">`;
+                }
+
+                unitsHTML += `
+                    <div style="background: #ffffff; border: 1px solid #eae7e2; border-radius: 14px; overflow: hidden; margin-top: 16px; text-align: left;">
+                        <div style="position: relative;" id="carousel-${index}">
+                            ${imagesHtml}
+                        </div>
+                        <div style="padding: 16px;">
+                            <div style="display: inline-block; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-bottom: 8px;">Tersedia</div>
+                            <div style="font-size: 15px; font-weight: 600; color: #18181b; margin-bottom: 4px;">${unit.name} (${unit.unit_number})</div>
+                            <div style="font-size: 13px; color: #71717a; margin-bottom: 4px;">Tipe: ${unit.tipe || 'Studio'}</div>
+                            <div style="font-size: 13px; color: #71717a; margin-bottom: 12px;">${unit.catatan_fasilitas || 'Fasilitas lengkap'}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f4f4f5; padding-top: 12px;">
+                                <span style="font-size: 14px; font-weight: 700; color: #18181b;">Rp ${Number(unit.price).toLocaleString('id-ID')} <span style="font-size: 11px; font-weight: 400; color: #71717a;">/malam</span></span>
+                                <button onclick="pilihUnit('${unit.id}')" style="background-color: #122723; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Pilih</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            sectionUnit.innerHTML = unitsHTML;
+        }
+
+        window.pilihUnit = function(unitId) {
+            alert('Unit dipilih dengan ID: ' + unitId + '. Lanjutkan ke form pengisian data tamu.');
+        };
     </script>
 </body>
 </html>
