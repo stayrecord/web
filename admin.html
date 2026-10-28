@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel | Sewa Apartemen Balikpapan</title>
+  <!-- Google Fonts Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome untuk Ikon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: #f4f4f4; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+    
+    /* Container Utama */
+    .admin-container { width: 100%; max-width: 480px; }
+    
+    /* Card / Panel Box */
+    .card-box { background: #ffffff; width: 100%; padding: 28px 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04); border: 1px solid #eae7e2; margin-bottom: 20px; }
+    
+    h2 { font-size: 20px; color: #18181b; margin-bottom: 20px; font-weight: 600; text-align: center; }
+    
+    /* Form & Inputs */
+    .input-group { text-align: left; margin-bottom: 16px; }
+    .input-label { font-size: 11px; font-weight: 700; color: #71717a; letter-spacing: 1px; margin-bottom: 6px; display: block; text-transform: uppercase; }
+    .input-field { width: 100%; padding: 12px 14px; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 14px; color: #18181b; background: #ffffff; outline: none; transition: border-color 0.2s; }
+    .input-field:focus { border-color: #122723; }
+    
+    /* Buttons */
+    .btn-primary { width: 100%; padding: 13px; background-color: #122723; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background-color: #1c3b35; }
+    
+    .btn-secondary { width: 100%; padding: 12px; background-color: #f4f4f5; color: #18181b; border: 1px solid #e4e4e7; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-secondary:hover { background-color: #e4e4e7; }
+
+    .btn-danger { background-color: #ef4444; color: white; border: none; }
+    .btn-danger:hover { background-color: dc2626; }
+    
+    /* Top Bar Admin */
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #ffffff; padding: 14px 20px; border-radius: 14px; border: 1px solid #eae7e2; }
+    .admin-user-info { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #18181b; }
+    .admin-actions { display: flex; gap: 8px; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; }
+    .btn-edit-akun { background: #f4f4f5; color: #18181b; border: 1px solid #e4e4e7; }
+    .btn-logout { background: #fee2e2; color: #991b1b; }
+
+    /* Search & Filter Bar */
+    .search-bar-container { display: flex; gap: 8px; margin-bottom: 16px; }
+    
+    /* Status Badge Headers */
+    .section-badge { text-align: center; padding: 8px; font-size: 12px; font-weight: 700; border-radius: 8px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .badge-proses { background: #dcfce7; color: #166534; }
+    .badge-disewa { background: #e0f2fe; color: #0369a1; }
+    .badge-kosong { background: #fef9c3; color: #854d0e; }
+
+    /* Booking Item Card */
+    .booking-item { background: #ffffff; border: 1px solid #eae7e2; border-radius: 14px; padding: 16px; margin-bottom: 12px; text-align: left; }
+    .booking-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #3f3f46; }
+    .booking-row strong { color: #18181b; }
+    
+    /* Action Buttons Group in Card */
+    .card-actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .action-btn { flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; text-align: center; color: white; }
+    .btn-print { background: #6b7280; }
+    .btn-share { background: #2563eb; }
+    .btn-edit { background: #d97706; }
+    .btn-status-green { background: #16a34a; }
+    
+    /* Modal Overlay */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+    .modal-card { background: #ffffff; padding: 24px; border-radius: 20px; width: 100%; max-width: 420px; text-align: left; box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="admin-container">
+
+    <!-- 1. BAGIAN LOGIN ADMIN -->
+    <div id="login-section" class="card-box">
+      <div style="text-align: center; margin-bottom: 16px;">
+        <i class="fa-solid fa-lock" style="font-size: 28px; color: #122723; margin-bottom: 8px;"></i>
+        <h2>ADMIN APARTEMEN</h2>
+      </div>
+      <form id="login-form">
+        <div class="input-group">
+          <label class="input-label">Email Admin</label>
+          <input type="email" id="admin-email" class="input-field" placeholder="admin@apartemen.com" required>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Sandi</label>
+          <input type="password" id="admin-password" class="input-field" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary">Login</button>
+      </form>
+    </div>
+
+    <!-- 2. BAGIAN DASHBOARD UTAMA (Tersembunyi sebelum login) -->
+    <div id="dashboard-section" class="hidden">
+      
+      <!-- Top Bar Profil & Logout -->
+      <div class="top-bar">
+        <div class="admin-user-info">
+          <i class="fa-solid fa-user-shield" style="color: #122723;"></i>
+          <span id="display-admin-name">AdminUsername</span>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-sm btn-edit-akun" id="open-ubah-akun">Ubah Akun</button>
+          <button class="btn-sm btn-logout" id="btn-logout">Logout</button>
+        </div>
+      </div>
+
+      <!-- Search Bar & Refresh -->
+      <div class="search-bar-container">
+        <input type="text" id="search-input" class="input-field" placeholder="Cari kamar atau tamu..." style="margin-bottom:0;">
+        <button class="btn-primary" style="width: auto; padding: 0 16px;" id="btn-refresh"><i class="fa-solid fa-rotate"></i></button>
+      </div>
+
+      <!-- KATEGORI: PERLU DIPROSES -->
+      <div class="section-badge badge-proses">Perlu Diproses</div>
+      <div id="list-perlu-diproses">
+        <!-- Contoh Kartu Reservasi Baru -->
+        <div class="booking-item">
+          <div class="booking-row"><span>Kode Booking</span><strong>D9T3</strong></div>
+          <div class="booking-row"><span>Nama Unit</span><strong>Nama Unit 1</strong></div>
+          <div class="booking-row"><span>Check-in</span><strong>25 Okt 2026</strong></div>
+          <div class="booking-row"><span>Check-out</span><strong>27 Okt 2026</strong></div>
+          <div class="booking-row"><span>Nama Penyewa</span><strong>Budi</strong></div>
+          <div class="booking-row"><span>Kontak WA</span><strong>08123456789</strong></div>
+          <div class="booking-row"><span>Status</span><strong style="color: #d97706;">Belum Bayar / Orderan Baru</strong></div>
+          <div class="card-actions">
+            <button class="action-btn btn-print">Print PDF</button>
+            <button class="action-btn btn-share">Share</button>
+            <button class="action-btn btn-edit">Edit Rv</button>
+            <button class="action-btn btn-status-green">Lunas</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KATEGORI: DISEWA -->
+      <div class="section-badge badge-disewa" style="margin-top: 20px;">Disewa / Aktif</div>
+      <div id="list-disewa">
+        <div class="booking-item">
+          <div class="booking-row"><span>Kode Booking</span><strong>T77F</strong></div>
+          <div class="booking-row"><span>Nama Unit</span><strong>Nama Unit 3</strong></div>
+          <div class="booking-row"><span>Check-in</span><strong>25 Okt 2026</strong></div>
+          <div class="booking-row"><span>Check-out</span><strong>27 Okt 2026</strong></div>
+          <div class="booking-row"><span>Nama Penyewa</span><strong>Budi</strong></div>
+          <div class="card-actions">
+            <button class="action-btn btn-print">Print PDF</button>
+            <button class="action-btn btn-share">Share</button>
+            <button class="action-btn btn-edit">Edit Rv</button>
+            <button class="action-btn btn-danger">Check-out</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KATEGORI: KOSONG -->
+      <div class="section-badge badge-kosong" style="margin-top: 20px;">Kosong / Tersedia</div>
+      <div id="list-kosong" class="card-box" style="text-align: left; padding: 20px;">
+        <div class="input-group" style="margin-bottom: 10px;">
+          <label class="input-label">Pilih Unit Kosong</label>
+          <select id="select-unit-kosong" class="input-field">
+            <option value="">-- Pilih Unit --</option>
+          </select>
+        </div>
+        <div class="booking-row"><span>Check-in</span><strong>26 Okt 2026</strong></div>
+        <div class="booking-row"><span>Check-out</span><strong>27 Okt 2026</strong></div>
+        <button class="btn-primary" style="margin-top: 10px; font-size: 13px; padding: 10px;">Buat Reservasi Sekarang</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL: UBAH AKUN -->
+  <div class="modal-overlay" id="modal-ubah-akun">
+    <div class="modal-card">
+      <h2>UBAH AKUN</h2>
+      <div class="input-group">
+        <label class="input-label">Nama Admin</label>
+        <input type="text" id="edit-nama-admin" class="input-field" value="AdminUsername">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Sandi Baru</label>
+        <input type="password" id="edit-sandi-baru" class="input-field" placeholder="Kosongkan jika tidak diubah">
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-secondary" id="close-ubah-akun">Batal</button>
+        <button class="btn-primary" id="save-ubah-akun">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Interaksi UI -->
+  <script>
+    // Contoh Toggle Sederhana untuk Simulasi Login Admin
+    const loginSection = document.getElementById('login-section');
+    const dashboardSection = document.getElementById('dashboard-section');
+    
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      // Simulasi berhasil login
+      loginSection.classList.add('hidden');
+      dashboardSection.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      dashboardSection.classList.add('hidden');
+      loginSection.classList.remove('hidden');
+    });
+
+    // Modal Ubah Akun
+    const modalUbahAkun = document.getElementById('modal-ubah-akun');
+    document.getElementById('open-ubah-akun').addEventListener('click', () => {
+      modalUbahAkun.style.display = 'flex';
+    });
+    document.getElementById('close-ubah-akun').addEventListener('click', () => {
+      modalUbahAkun.style.display = 'none';
+    });
+    document.getElementById('save-ubah-akun').addEventListener('click', () => {
+      alert('Perubahan akun berhasil disimpan!');
+      modalUbahAkun.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
